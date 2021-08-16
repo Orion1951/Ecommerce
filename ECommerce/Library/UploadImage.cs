@@ -10,13 +10,15 @@ namespace ECommerce.Library
 {
    public class UploadImage
    {
-      public async Task<byte[]> ByteAvatarImageAsync(IFormFile AvatarImage, IWebHostEnvironment environment)
+      public async Task<byte[]> ByteAvatarImageAsync(IFormFile AvatarImage, IWebHostEnvironment environment, string image)
       {
-         string image = "images/images/default.png";
          if (AvatarImage != null)
          {
-            using var memoryStream = new MemoryStream();
-            return memoryStream.ToArray();
+                using (var memoryStream = new MemoryStream())
+                {
+                    await AvatarImage.CopyToAsync(memoryStream);
+                    return memoryStream.ToArray();
+                }
          }
          else
          {

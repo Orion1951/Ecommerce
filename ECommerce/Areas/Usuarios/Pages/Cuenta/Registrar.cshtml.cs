@@ -31,8 +31,7 @@ namespace ECommerce.Areas.Usuarios.Pages.Cuenta
          UserManager<IdentityUser> userManager,
          RoleManager<IdentityRole> roleManager,
          ApplicationDbContext dbContext, 
-         IWebHostEnvironment environment,
-         UploadImage uploadImage
+         IWebHostEnvironment environment
          )
       {
          _signInManager = signInManager;
@@ -41,7 +40,7 @@ namespace ECommerce.Areas.Usuarios.Pages.Cuenta
          _dbContext = dbContext;
          _userRoles = new LUserRoles();
          _environment = environment;
-         _uploadImage = uploadImage;
+         _uploadImage = new UploadImage();
       }
         public void OnGet()
         {
@@ -83,7 +82,7 @@ namespace ECommerce.Areas.Usuarios.Pages.Cuenta
       {
          _dataInput = Input;
          var valor = false;
-         if (ModelState.IsValid)
+         if (!Input.Role.Equals("Seleccione un rol"))
          {
             var userList = _userManager.Users.Where(u => u.Email.Equals(Input.Email)).ToList();
             if (userList.Count.Equals(0))
@@ -106,7 +105,20 @@ namespace ECommerce.Areas.Usuarios.Pages.Cuenta
                         {
                            await _userManager.AddToRoleAsync(user, Input.Role);
                            var dataUser = _userManager.Users.Where(u => u.Email.Equals(Input.Email)).ToList().Last();
-                           var imageByte = await _uploadImage.ByteAvatarImageAsync(Input.AvatarImage, _environment);
+                           var imageByte = await _uploadImage.ByteAvatarImageAsync(Input.AvatarImage, _environment, "images/images/default.png");
+                               var tUser = new TUsuarios
+                               {
+                                   Nombre = Input.Nombre,
+                                   Apellido = Input.Apellido,
+                                   Email = Input.Email,
+                                   IdUser = dataUser.Id,
+                                   Image = imageByte
+                               };
+                               await _dbContext.AddAsync(tUser);
+                               _dbContext.SaveChanges();
+                               transaction.Commit();
+                               _dataInput = null;
+                               valor = true;
                         }
                         else
                         {
@@ -115,6 +127,7 @@ namespace ECommerce.Areas.Usuarios.Pages.Cuenta
                               _dataInput.ErrorMessage = item.Description;
                            }
                            valor = false;
+                           transaction.Rollback();
                         }
                      }
                      catch (Exception ex)
